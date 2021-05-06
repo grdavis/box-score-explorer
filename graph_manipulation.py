@@ -2,6 +2,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from data_manipulation import calc_win_percentage_and_occurrences
+from bs4 import BeautifulSoup
 
 def create_winp_weighted_avg_traces(data_column, quarter, trace_color, league_text):
     p_or_q = "P" if league_text == "NHL" else "Q"
@@ -11,11 +12,12 @@ def create_winp_weighted_avg_traces(data_column, quarter, trace_color, league_te
     probs = go.Scatter(
         x = bins[:-1], 
         y = winp[:-1],
+        customdata = occurs,
         opacity = 0.5,
         mode = 'lines',
         line = dict(color=trace_color),
         name = '%s%s Win %%' % (p_or_q, quarter),
-        hovertemplate="margin: %{x}<br>" + p_or_q + quarter + " win probability: %{y}<extra></extra>")
+        hovertemplate="margin: %{x}<br>" + p_or_q + quarter + " win probability: %{y}<br>games: %{customdata}<extra></extra>")
     weighted_avg = go.Scatter(
         x = bins,
         y = [weighted_avg_num]*len(bins),
@@ -48,6 +50,24 @@ def final_quarter_trace(data_column, trace_color):
         hovertemplate="margin: %{x}<br>games: %{customdata}<br>share of game finals: %{y}<extra></extra>")
     return occurs_line
 
+def markup_html(league_text, save_path):
+    original = BeautifulSoup(open(save_path).read(), features="html.parser")
+    inserts = open('Outputs/' + league_text + '_html_extras.txt', 'r').read().split('\n')
+
+    header = original.new_tag('h1')
+    header.string = inserts[0]
+    original.html.insert(0, header)
+
+    for p in inserts[1:]:
+        paragraph = original.new_tag('p', style = 'text-indent: 30px')
+        paragraph.string = p
+        original.html.insert(-1, paragraph)
+    
+    with open(save_path,"w") as file:
+        file.write(str(original))
+
+# markup_html('NBA', 'Outputs/nba_summary.html')
+
 def create_margins_occurences_graphs(league_text, plots, save_path = None, save = False):
     period_or_quarter = "Period" if league_text == "NHL" else "Quarter"
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -71,5 +91,6 @@ def create_margins_occurences_graphs(league_text, plots, save_path = None, save 
             print("please provide a save_path")
             exit()
         fig.write_html("%s.html" % save_path)
+        markup_html(league_text, "%s.html" % save_path)
         
     return fig
