@@ -40,9 +40,9 @@ def create_winp_weighted_avg_traces(data_column, quarter, trace_color, league_te
 def final_quarter_trace(data_column, trace_color):
     occurs, bins = np.histogram(data_column, bins = range(min(data_column), max(data_column) + 2))
     occurs_line = go.Scatter(
-        x = [0] + list(bins[:-1]),
-        y = [0] + list(occurs/sum(occurs)),
-        customdata = occurs,
+        x = [0] + list(bins[:-1]) if bins[0] != 0 else bins[:-1],
+        y = [0] + list(occurs/sum(occurs)) if bins[0] != 0 else occurs/sum(occurs),
+        customdata = [0] + list(occurs) if bins[0] != 0 else occurs,
         mode = 'none',
         fill = 'tozeroy',
         fillcolor = f"rgba{(int(trace_color[1:3], 16), int(trace_color[3:5], 16), int(trace_color[5:7], 16), 0.15)}",
@@ -65,8 +65,6 @@ def markup_html(league_text, save_path):
     
     with open(save_path,"w") as file:
         file.write(str(original))
-
-# markup_html('NBA', 'Outputs/nba_summary.html')
 
 def create_margins_occurences_graphs(league_text, plots, save_path = None, save = False):
     period_or_quarter = "Period" if league_text == "NHL" else "Quarter"
